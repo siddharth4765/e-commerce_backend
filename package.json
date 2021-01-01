@@ -1,0 +1,23 @@
+{
+  "name": "algo8.ai_assignment",
+  "version": "1.0.0",
+  "description": "e-commerce web app as an internship assignment by Algo8.AI",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Siddharth Kaushik",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "ejs": "^3.1.5",
+    "express": "^4.17.1",
+    "express-session": "^1.17.1",
+    "mongoose": "^5.11.9",
+    "passport": "^0.4.1",
+    "passport-local": "^1.0.0",
+    "passport-local-mongoose": "^6.0.1",
+    "stripe": "^8.129.0"
+  }
+}

@@ -1,0 +1,51 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Dashboard</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+
+</head>
+
+<body>
+  <form action="/addProduct" method="post">
+      <label for="prodName"><b>Product Name</b></label>
+      <input type="text" placeholder="Enter Product Name" name="prodName" required>
+      <label for="prodAmt"><b>Product Quantity</b></label>
+      <input type="text" placeholder="Enter Product Quantity" name="prodAmt" required>
+      <label for="prodPrice"><b>Product Price</b></label>
+      <input type="text" placeholder="Enter Product Price" name="prodPrice" required>
+      <input type="hidden" value="<%= user._id %>" name="user_id">
+      <input type="hidden" id="location" value="" name="seller_location">
+      <button type="submit">Add product for sale</button>
+  </form>
+
+  <h2>Products Bought</h2>
+  <%= buy_products %>
+
+  <h2>Products Sold</h2>
+  <%= sell_products %>
+
+
+  <script>
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(storePosition);
+      }
+    }
+    function storePosition(position) {
+      var myPosition = {
+        timestamp: position.timestamp,
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        altitude: position.coords.altitude,
+        }
+      document.getElementById("location").value = JSON.stringify(myPosition);
+    }
+    getLocation();
+  </script>
+</body>
+</html>

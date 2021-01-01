@@ -1,0 +1,28 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Home</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+
+</head>
+
+<body>
+
+<%	products.forEach(function(product) { %>
+		<form action="/products/<%=product._id%>" method="get">
+
+    		<label><%=product.name%></label>
+    	
+    		<button type="submit">Go to product page</button>
+
+		</form> 
+<%  }) %>
+
+
+
+</body>
+</html>
