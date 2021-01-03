@@ -10,6 +10,7 @@ const passportLocalMongoose = require("passport-local-mongoose")
 const bodyParser = require("body-parser")
 const LocalStrategy = require("passport-local").Strategy
 const stripe = require("stripe")(process.env.STRIPE_KEY)
+const valid_coupons = ["AUC38","NYZ56","OFF123"]
 const productSchema = {
 	name: String,
 	price: String,
@@ -98,7 +99,7 @@ app.post("/register", (req, res) => {
   			console.log(err)
   			res.redirect("/register")
   		} else {
-  			passport.authenticate('local')(req, res, function () {
+  			passport.authenticate("local")(req, res, function () {
           	res.redirect("/dashboard")
         	})
   		}
@@ -172,6 +173,9 @@ app.post("/checkout", (req, res) => {
 		if(req.isAuthenticated()) {
 			if (req.body.quantity > quantity_in_store) {
 				res.send("not enough stock")
+			}
+			if (valid_coupons.includes(req.body.coupon)) {
+				product.price /= 2
 			}
 
 			const session = await stripe.checkout.sessions.create({

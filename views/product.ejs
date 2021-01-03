@@ -14,14 +14,19 @@
 
 	<%= product %>
 	<form action="/checkout" method="post">
+
 		<label for="quantity">Quantity (10-100):</label>
-		<input type="number" name="quantity">
+		<input type="number" name="quantity" required>
+
+    <label for="coupon">Coupon code:</label>
+    <input type="text" name="coupon">
+
 		<input type="hidden" value="<%= product._id %>" name="prod_id">
-    	<input type="hidden" value="<%= product.seller_id %>" name="seller_id">
-    	<input type="hidden" value="<%= product.seller_location %>" name="seller_location">
-    	<input type="hidden" id="location" value="" name="buyer_location">
-    	
-    	<button type="submit">Buy</button>
+    <input type="hidden" value="<%= product.seller_id %>" name="seller_id">
+    <input type="hidden" value="<%= product.seller_location %>" name="seller_location">
+    <input type="hidden" id="location" value="" name="buyer_location">
+    
+    <button type="submit">Buy</button>
 	</form> 
 
 	<script>
