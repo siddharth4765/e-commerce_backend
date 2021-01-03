@@ -1,3 +1,4 @@
+require("dotenv").config()
 const express = require("express")
 const app = express()
 const port = 3000
@@ -8,6 +9,7 @@ const passport = require("passport")
 const passportLocalMongoose = require("passport-local-mongoose")
 const bodyParser = require("body-parser")
 const LocalStrategy = require("passport-local").Strategy
+const stripe = require("stripe")(process.env.STRIPE_KEY)
 const productSchema = {
 	name: String,
 	price: String,
@@ -27,12 +29,14 @@ const transactionSchema = {
 	buyer_location: String,
 	seller_location: String
 }
+let checkout_req = 0
+let quantity_in_store = 0 
 
 app.use(bodyParser.urlencoded({extended: true}))
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 app.use(session({
-  secret: 'keyboard cat',
+  secret: process.env.SESSION_KEY,
   resave: false,
   saveUninitialized: false,
   cookie: { secure: false }
@@ -160,26 +164,35 @@ app.get("/logout", (req, res) => {
 
 app.post("/checkout", (req, res) => {
 
-	Product.find({_id: req.body.prod_id, seller_id: req.body.seller_id}, (err, product) => {
+	checkout_req = req
+
+	Product.find({_id: req.body.prod_id, seller_id: req.body.seller_id}, async (err, product) => {
 		product = product[0]
-		let quantity_in_store = product.quantity
+		quantity_in_store = product.quantity
 		if(req.isAuthenticated()) {
 			if (req.body.quantity > quantity_in_store) {
 				res.send("not enough stock")
 			}
-			const transaction = new Transaction({
-				buyer_id: req.user._id,
-				seller_id: req.body.seller_id,
-				amount_sold: req.body.quantity,
-				prod_id: req.body.prod_id,
-				buyer_location: req.body.buyer_location,
-				seller_location: req.body.seller_location
-				})
-			transaction.save()
 
-			quantity_in_store -= req.body.quantity
-			Product.updateOne({_id: req.body.prod_id, seller_id: req.body.seller_id}, {quantity: quantity_in_store}, (err, o) => {})
-			res.render("checkout")
+			const session = await stripe.checkout.sessions.create({
+    			payment_method_types: ["card"],
+    			line_items: [{
+        			price_data: {
+          				currency: "usd",
+          				product_data: {
+            			name: product.name,
+          				},
+          			unit_amount: product.price * 100,
+        			},
+        		quantity: req.body.quantity,
+      			}],
+    			mode: "payment",
+    			success_url: req.protocol + "://" + req.get("host") + "/checkout/success",
+    			cancel_url: req.protocol + "://" + req.get("host") + "/checkout/cancel",
+  			})
+
+			
+			res.render("checkout", {sessionId: session.id})
 		
 		} else {
 			res.redirect("/login")
@@ -187,6 +200,27 @@ app.post("/checkout", (req, res) => {
 	})
 	
 
+})
+
+app.get("/checkout/success", (req, res) => {
+
+	const transaction = new Transaction({
+		buyer_id: checkout_req.user._id,
+		seller_id: checkout_req.body.seller_id,
+		amount_sold: checkout_req.body.quantity,
+		prod_id: checkout_req.body.prod_id,
+		buyer_location: checkout_req.body.buyer_location,
+		seller_location: checkout_req.body.seller_location
+	})
+	transaction.save()
+
+	quantity_in_store -= checkout_req.body.quantity
+	Product.updateOne({_id: checkout_req.body.prod_id, seller_id: checkout_req.body.seller_id}, {quantity: quantity_in_store}, (err, o) => {})
+	res.render("checkout_success")
+})
+
+app.get("/checkout/cancel", (req, res) => {
+	res.render("checkout_cancel")
 })
 
 

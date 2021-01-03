@@ -1,0 +1,30 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title> Checkout </title>
+
+  <link rel="stylesheet" href="css/styles.css">
+
+</head>
+
+<body>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <button id="pay_btn"> Pay </button>
+  <script>
+    const stripe_pub_key = "pk_test_51I5UN0JnVtulcSFQVCdNK7sQU7Vuyf0j8dkVhUHN5rJQzEKrd6vjkaqX8GurNgcNHNXGbEA0YIyvy7iGNIwUDx8F00eRD9vgL8";
+    const stripe = Stripe(stripe_pub_key);
+    let pay_btn = document.getElementById("pay_btn");
+    pay_btn.addEventListener("click", function() {
+      stripe.redirectToCheckout({
+        sessionId: "<%= sessionId %>"
+      });
+      console.log("<%= sessionId %>")
+    });
+  </script>
+
+</body>
+</html>
