@@ -7,6 +7,7 @@ This is the backend for my e-commerce web store app which is implemented using:
 4. Stripe for payment
 5. EJS for dynamic rendering of web pages
 6. HTML Geolocation API
+7. SendGrid for automatic email generation
 
 The functionality is as follows:
 1. The main server file is the server.js Node.js file which listens at http://localhost:3000
@@ -17,3 +18,4 @@ The functionality is as follows:
 6. Basic buying and selling functionality is there and a product can be bought by visiting its page.
 7. Buyer and seller locations are stored in the database.
 8. Valid coupon codes can be used to apply discount.
+9. Automatic emails are generated for confirming user registration and payment success.
