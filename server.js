@@ -11,6 +11,7 @@ const bodyParser = require("body-parser")
 const LocalStrategy = require("passport-local").Strategy
 const stripe = require("stripe")(process.env.STRIPE_KEY)
 const valid_coupons = ["AUC38","NYZ56","OFF123"]
+const sgMail = require('@sendgrid/mail')
 const productSchema = {
 	name: String,
 	price: String,
@@ -53,11 +54,13 @@ const Transaction = mongoose.model("Transaction", transactionSchema)
 const User = mongoose.model("User", userSchema)
 
 // use static authenticate method of model in LocalStrategy
-passport.use(new LocalStrategy(User.authenticate()));
+passport.use(new LocalStrategy(User.authenticate()))
  
 // use static serialize and deserialize of model for passport session support
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+passport.serializeUser(User.serializeUser())
+passport.deserializeUser(User.deserializeUser())
+
+sgMail.setApiKey(process.env.SENDGRID_KEY)
 
 app.get("/", (req, res) => {
 
@@ -99,8 +102,14 @@ app.post("/register", (req, res) => {
   			console.log(err)
   			res.redirect("/register")
   		} else {
-  			passport.authenticate("local")(req, res, function () {
-          	res.redirect("/dashboard")
+  			passport.authenticate("local")(req, res, function () {  				
+          		res.redirect("/dashboard")
+          		sgMail.send({
+					to: req.body.username,
+					from: "siddharthhumanoid@gmail.com",
+					subject: "Registration successful",
+					html: `<p> Thankyou for registering. </p>`
+				})
         	})
   		}
   	})
@@ -109,44 +118,51 @@ app.post("/register", (req, res) => {
 
 app.get("/dashboard", async (req, res) => {
 
+
 	const currentUser = req.user
 	let buy_products = []
 	let sell_products = []
 
 	if (req.isAuthenticated()) {
 
+
 		const buy_transactions = await Transaction.find({buyer_id: currentUser._id})
 		let len = buy_transactions.length
-		const fill_buy_products = () => {
-			const promise = new Promise(async (resolve, reject) => {
-				buy_transactions.forEach(async function(transaction) {
-					const product = await Product.findOne({_id: transaction.prod_id})
-					if (product) {
-						buy_products.push(product)
-					}
-					if (transaction == buy_transactions[len-1]) {resolve(buy_products)}
-				})				
-			})
-			return promise
+		if (len != 0) {
+			const fill_buy_products = () => {
+				const promise = new Promise(async (resolve, reject) => {
+					buy_transactions.forEach(async function(transaction) {
+						const product = await Product.findOne({_id: transaction.prod_id})
+							if (product) {
+								buy_products.push(product)
+							}
+						if (transaction == buy_transactions[len-1]) {resolve(buy_products)}
+					})				
+				})
+				return promise
+			}
+			buy_products = await fill_buy_products()
 		}
-		buy_products = await fill_buy_products()
 		
 		const sell_transactions = await Transaction.find({seller_id: currentUser._id})
 		len = sell_transactions.length
-		const fill_sell_products = () => {
-			const promise = new Promise(async (resolve, reject) => {
-				sell_transactions.forEach(async function(transaction) {
-					const product = await Product.findOne({_id: transaction.prod_id})
-					if (product) {
-						sell_products.push(product)
-					}
-					if (transaction == sell_transactions[len-1]) {resolve(sell_products)}
-				})				
-			})
-			return promise
+		if (len != 0) {
+			const fill_sell_products = () => {
+				const promise = new Promise(async (resolve, reject) => {
+					sell_transactions.forEach(async function(transaction) {
+						const product = await Product.findOne({_id: transaction.prod_id})
+						if (product) {
+							sell_products.push(product)
+						}
+						if (transaction == sell_transactions[len-1]) {resolve(sell_products)}
+					})				
+				})
+				return promise
+			}
+
+			sell_products = await fill_sell_products()
 		}
-		sell_products = await fill_sell_products()
-		
+			
 		res.render("dashboard", {buy_products: buy_products, sell_products: sell_products, user: currentUser})
 
 		}
@@ -206,7 +222,7 @@ app.post("/checkout", (req, res) => {
 
 })
 
-app.get("/checkout/success", (req, res) => {
+app.get("/checkout/success", async (req, res) => {
 
 	const transaction = new Transaction({
 		buyer_id: checkout_req.user._id,
@@ -220,6 +236,12 @@ app.get("/checkout/success", (req, res) => {
 
 	quantity_in_store -= checkout_req.body.quantity
 	Product.updateOne({_id: checkout_req.body.prod_id, seller_id: checkout_req.body.seller_id}, {quantity: quantity_in_store}, (err, o) => {})
+	sgMail.send({
+		to: checkout_req.user.username,
+		from: "siddharthhumanoid@gmail.com",
+		subject: "Purchase successful",
+		html: `<p> Your order for product id ${checkout_req.body.prod_id} was successful. </p>`
+	})
 	res.render("checkout_success")
 })
 
